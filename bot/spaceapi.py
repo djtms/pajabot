@@ -8,6 +8,9 @@ class SpaceAPI(object):
 
     def updateStatus(self, labOpen, topic):
 	print "Setting lab open " + str(labOpen) + " and topic " + topic
-	self.c.updateStatus(labOpen, topic)
-        print "Update ok"
+	try:
+		self.c.updateStatus(labOpen, topic)
+	except:
+        	print "Update failure"
+		
 

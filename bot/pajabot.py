@@ -14,9 +14,14 @@ import ConfigParser
 import feedparser
 import glob
 import imp
+import gevent
+import zerorpc
+import zmq
 
 from irc.bot import ServerSpec
 from irc.bot import SingleServerIRCBot
+from irc.client import SimpleIRCClient
+from irc.client import Reactor
 
 from rpi_camera import RPiCamera
 from spaceapi import SpaceAPI
@@ -48,10 +53,12 @@ class PajaBot(SingleServerIRCBot):
     def __init__(self):
         config = ConfigParser.ConfigParser()
 
-        configfile = '/home/pi/pajabot/bot.conf' 
-        if (os.path.isfile('/home/pi/pajabot/local.conf')):
-            configfile = '/home/pi/pajabot/local.conf'
-
+        configfile = '~/pajabot/bot.conf' 
+        if (os.path.isfile('~/pajabot/local.conf')):
+            configfile = '~/pajabot/local.conf'
+        if (os.path.isfile('local.conf')):
+            configfile = 'local.conf'
+	print "Reading config from " + configfile
         config.read(configfile)
 
         self.server = config.get("bot","server")
@@ -113,7 +120,7 @@ class PajaBot(SingleServerIRCBot):
             self.checkLights()
             if (self.vaasa): self.read_feed()
             try:
-                self.ircobj.process_once(0.2)
+                self.reactor.process_once(0.2)
             except UnicodeDecodeError:
                 pass
 #                print 'Somebody said something in non-utf8'
@@ -132,7 +139,7 @@ class PajaBot(SingleServerIRCBot):
             latest = rssfeed.entries[len(rssfeed.entries)-1]
             
             if latest.id in self.rss_timestamp:
-                variable = 2           
+                variable = 2
             else: 
                 self.rss_timestamp = latest.id
                 try:
@@ -193,9 +200,6 @@ class PajaBot(SingleServerIRCBot):
     def on_nicknameinuse(self, c, e):
         c.nick(c.get_nickname() + "_")
 
-#    def on_disconnect(self, c, e):
-#        raise SystemExit() 
-
     def on_pubmsg(self, c, e):
         cmd = e.arguments[0].split()[0]
 
@@ -222,10 +226,6 @@ class PajaBot(SingleServerIRCBot):
             else:
                 self.say('printer is offline')
             print('p: ' + str(ping_response))
-
-#        if (cmd=='!printteri'):
-#            commands['PRINTTERI'].index(self, c,e)
-
 
         if cmd=='!shot':
             self.camera.takeShotCommand()
@@ -255,5 +255,10 @@ class PajaBot(SingleServerIRCBot):
 
 
 bot = PajaBot()
+s = zerorpc.Server(bot)
+s._events.setsockopt(zmq.IPV4ONLY, 0)
+s.bind("tcp://[::1]:4144")
+gevent.spawn(s.run)
+
 bot.run()
 
