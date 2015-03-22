@@ -257,8 +257,8 @@ class PajaBot(SingleServerIRCBot):
 bot = PajaBot()
 s = zerorpc.Server(bot)
 s._events.setsockopt(zmq.IPV4ONLY, 0)
-s.bind("tcp://[::1]:4144")
+s.bind("tcp://127.0.0.1:4144")
 gevent.spawn(s.run)
-
+gevent.sleep(5) # Magic for zerorpc
 bot.run()
 
