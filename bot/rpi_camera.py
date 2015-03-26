@@ -18,7 +18,7 @@ class RPiCamera():
         pixelsum = self.getPixelSum()
 #        print "checkLights: pixelsum is " + str(pixelsum)
         self.removeShot()
-        return pixelsum > 50
+        return pixelsum > 10
 
     def takeShot(self):
         os.system('/home/pi/pajabot/scripts/takeshot.sh')
@@ -48,5 +48,5 @@ class RPiCamera():
         pixelvar = stat.var[0]+stat.var[1]+stat.var[2]
         self.uploadShot()
         self.removeShot()
-        return pixelvar
+        return pixelsum
 
